@@ -59,15 +59,18 @@
 #  Interface:
 #      fetch_curby(count=1024) -> list of uint16, [] on any failure
 #      last_provenance()       -> dict describing the last fetch
+#      CLI:  curby-qrng [-n N]  (console script; python -m curby_qrng)
 #  Stdlib only. Python 3.11 (Q).
 # ═══════════════════════════════════════════════════════════════════
 
+import argparse
 import base64
 import hashlib
 import json
 import os
 import ssl
 import struct
+import sys
 import time
 import urllib.request
 
@@ -369,11 +372,52 @@ def last_error():
     return _last_error
 
 
+def cli(argv=None) -> int:
+    """Command-line entry point: fetch N verified uint16 values.
+
+    Prints the values and their provenance (rounds and pulse timestamps).
+    Returns 0 on success, 1 when no verified pulse could be obtained — in
+    which case nothing is printed as randomness.
+    """
+    parser = argparse.ArgumentParser(
+        prog="curby-qrng",
+        description=(
+            "Fetch N uint16 values from the CURBy-Q chain "
+            "(twine/1.0.x/diqrng/1.0.x): device-independent certified "
+            "quantum randomness. Every value comes from an RS256-verified "
+            "pulse; if no verified pulse is available, nothing is output."
+        ),
+    )
+    parser.add_argument("-n", "--count", type=int, default=16, metavar="N",
+                        help="number of uint16 values to print (default: 16)")
+    args = parser.parse_args(argv)
+    if args.count < 1:
+        parser.error("N must be at least 1")
+
+    values = fetch_curby(args.count)
+    if not values:
+        print("No verified CURBy-Q pulses available: refusing to print "
+              "randomness.", file=sys.stderr)
+        print(f"reason: {last_error() or 'unknown error'}", file=sys.stderr)
+        return 1
+
+    prov = last_provenance()
+    print(f"{len(values)} uint16 values from CURBy-Q certified quantum "
+          f"randomness (every pulse RS256-verified)")
+    for start in range(0, len(values), 16):
+        print("  " + " ".join(str(v) for v in values[start:start + 16]))
+    print(f"chain: {prov['chain']} ({prov['specification']})")
+    print(f"chain CID: {prov['chain_cid']}")
+    print("rounds: " + ", ".join(str(r) for r in prov["rounds"]))
+    print("pulse timestamps: "
+          + ", ".join(str(t) for t in prov["pulse_timestamps"]))
+    print(f"pulses used: {len(prov['pulses'])}; oldest "
+          f"{prov['oldest_pulse_ts']}; newest {prov['newest_pulse_ts']}")
+    print(f"cursor pass: {prov['cursor_pass']}; fetched at {prov['fetched_at']}")
+    print("note: the DIQRNG chain has been dormant since 2025-08-22 — these "
+          "are banked, signed certified pulses, not fresh output.")
+    return 0
+
+
 if __name__ == "__main__":
-    nums = fetch_curby(1024)
-    if not nums:
-        print("FETCH FAILED:", last_error())
-    else:
-        print(f"fetched {len(nums)} uint16 values")
-        print("first 8:", nums[:8])
-        print(json.dumps(last_provenance(), indent=1))
+    raise SystemExit(cli())

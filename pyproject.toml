@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "curby-qrng"
+version = "1.0.0"
+description = "Stdlib-only client for CURBy-Q, the device-independent certified quantum randomness chain (CU Boulder + NIST)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Dr. Brent Allen Jensen" },
+]
+keywords = [
+    "quantum-randomness",
+    "device-independent",
+    "bell-test",
+    "curby",
+    "randomness-beacon",
+    "twine",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+# Zero runtime dependencies: the client is stdlib-only by design.
+dependencies = []
+
+[project.scripts]
+curby-qrng = "curby_qrng:cli"
+
+[project.urls]
+Homepage = "https://github.com/ambitionmagician/curby-qrng"
+Source = "https://github.com/ambitionmagician/curby-qrng"
+
+[tool.setuptools]
+py-modules = ["curby_qrng"]
